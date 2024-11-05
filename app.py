@@ -8,7 +8,7 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, origins=['https://myfrontend.com'])
+CORS(app, origins=['https://cat-vs-dog-sigma.vercel.app/'])
 
 if __name__ == '__main__':
     app.run(port=5000, host='0.0.0.0', debug=False)
