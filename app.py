@@ -14,7 +14,14 @@ if __name__ == '__main__':
     app.run(port=5000, host='0.0.0.0', debug=False)
 
 model = load_model('best_cat_dog_classifier.keras')  # Load the pre-trained model
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
+UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "static/uploads")
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+import os
+
+# Set up the uploads directory
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
 
 def preprocess_image(image_path):
     img = load_img(image_path, target_size=(128, 128))  # Adjust for model input size
