@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, origins=['https://cat-vs-dog-sigma.vercel.app'])
+CORS(app, origins=["*"])
 
 # Set upload folder and ensure it exists
 UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "static/uploads")
