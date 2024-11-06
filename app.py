@@ -11,7 +11,8 @@ app = Flask(__name__)
 CORS(app, origins=['https://cat-vs-dog-sigma.vercel.app/'])
 
 if __name__ == '__main__':
-    app.run(port=5000, host='0.0.0.0', debug=False)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
 
 model = load_model('best_cat_dog_classifier.keras')  # Load the pre-trained model
 UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "static/uploads")
