@@ -1,64 +1,52 @@
-from flask import Flask, request, jsonify
+import gradio as gr
 from keras.models import load_model
 from keras.preprocessing.image import img_to_array, load_img
 import numpy as np
 import os
-from werkzeug.utils import secure_filename
-from flask_cors import CORS
-
-app = Flask(__name__)
-CORS(app, origins=["https://cat-vs-dog-sigma.vercel.app"], methods=["GET", "POST", "OPTIONS"])
-
-
-# Set upload folder and ensure it exists
-UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "static/uploads")
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
 
 # Load the pre-trained model at the start
-model = load_model('best_cat_dog_classifier.keras')
+model = load_model('model/best_cat_dog_classifier.keras')
 
+# Image preprocessing function
 def preprocess_image(image_path):
-    img = load_img(image_path, target_size=(128, 128))  # Adjust for model input size
+    img = load_img(image_path, target_size=(128, 128))
     img = img_to_array(img)
-    img = np.expand_dims(img, axis=0)  # Add batch dimension
+    img = np.expand_dims(img, axis=0)
     img /= 255.0
     return img
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
+# Prediction function
+def predict_image(img):
+    # Save the image temporarily
+    img.save("temp_image.png")
+    img_path = "temp_image.png"
 
-    file = request.files['file']
-    if file:
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
+    # Preprocess and predict
+    processed_img = preprocess_image(img_path)
+    prediction = model.predict(processed_img)
+    confidence_threshold = 0.5
 
-        img = preprocess_image(file_path)
-        prediction = model.predict(img)
-        confidence_threshold = 0.5
+    if prediction >= confidence_threshold:
+        result = "dog"
+        confidence = float(prediction) * 100
+    else:
+        result = "cat"
+        confidence = float(1 - prediction) * 100
 
-        if prediction >= confidence_threshold:
-            result = "dog"
-            confidence = float(prediction) * 100
-        else:
-            result = "cat"
-            confidence = float(1 - prediction) * 100
+    # Clean up
+    os.remove(img_path)
+    return {"result": result, "confidence": round(confidence, 2)}
 
-        # Clean up the uploaded file
-        try:
-            os.remove(file_path)
-        except OSError as e:
-            print(f"Error deleting file {file_path}: {e}")
+# Define Gradio Interface
+interface = gr.Interface(
+    fn=predict_image,
+    inputs=gr.inputs.Image(type="pil"),
+    outputs="json",
+    title="Cat vs Dog Classifier",
+    description="Upload an image to classify it as a cat or dog."
+)
 
-        return jsonify({'result': result, 'confidence': round(confidence, 2)})
-    return jsonify({'error': 'Failed to process the image'}), 400
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+# Launch the interface
+interface.launch()
 
 
